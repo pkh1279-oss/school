@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>나의 소통 스타일 찾기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    /* 폰트 및 기본 설정 */
+    body {
+      margin: 0;
+      background: #fdfdfd; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      color: #333;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 15px 20px 30px 20px; 
+      text-align: center;
+    }
+
+    /* === 시작 페이지 디자인 === */
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #2c3e50;
+      margin-top: 10px; 
+      margin-bottom: 5px;
+      letter-spacing: -0.5px;
+    }
+    
+    .sub-title {
+        font-size: 16px;
+        color: #7f8c8d;
+        font-weight: 500;
+        margin-bottom: 20px;
+    }
+
+    /* 1. 박스 크기 대폭 축소 (여백 줄임) */
+    .intro-box {
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      /* 위아래 패딩을 15px로 줄여서 박스를 납작하게 */
+      padding: 10px 10px; 
+      margin-bottom: 10px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      text-align: center;
+    }
+
+    .intro-text {
+      font-size: 15px;
+      line-height: 1.5; /* 줄간격 적당히 조절 */
+      color: #555;
+      margin: 0;
+      word-break: keep-all;
+    }
+    .intro-text strong { color: #e67e22; }
+
+    /* 안내 사항 박스 */
+    .notice-box {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 15px 20px;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 14px;
+      color: #475569;
+      word-break: keep-all;
+    }
+    
+    .notice-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #334155;
+        display: block;
+    }
+    
+    .notice-list {
+        margin: 0; 
+        padding: 0; 
+        list-style: none;
+        line-height: 1.8;
+    }
+    .notice-list li { margin-bottom: 3px; }
+
+    /* 입력창 스타일 */
+    input {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+      text-align: center;
+      transition: 0.2s;
+      background: #fff;
+    }
+    input:focus {
+        border-color: #2c3e50;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(44,62,80,0.1);
+    }
+
+    /* 버튼 스타일 */
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 17px;
+      margin-top: 10px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.98); }
+
+    .start-btn {
+      background: #2c3e50;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(44,62,80,0.2);
+    }
+
+    .error-text {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 10px;
+      display: none;
+      font-weight: bold;
+    }
+
+    /* === 문항 페이지 === */
+    #question-text {
+      font-size: 19px;
+      font-weight: 800;
+      line-height: 1.4;
+      margin: 10px 0;
+      word-break: keep-all;
+      color: #222;
+    }
+
+    .answer-btn {
+      background: #f3f9f6; 
+      border: 1px solid #d1e2da;
+      font-size: 17px;
+      font-weight: 600;
+      color: #333;
+      padding: 18px;
+      margin-top: 10px;
+      border-radius: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+      transition: all 0.2s;
+    }
+    .answer-btn:hover { background: #e6f2ed; }
+    
+    .answer-btn.timeout { 
+      border: 2px solid #e53935 !important; 
+      background: #f3f9f6; 
+      color: #333; 
+    }
+
+    #progress-text {
+      font-size: 14px; 
+      color: #94a3b8; 
+      font-weight: 600; 
+      margin-bottom: 5px; 
+      text-align: center;
+    }
+
+    .timer-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    #timer-bar { flex: 1; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+    #timer-progress { height: 100%; width: 100%; background: #3b82f6; transition: width 1s linear; }
+    #timer-text { min-width: 45px; font-size: 14px; font-weight: 700; color: #3b82f6; text-align: right; }
+    #timer-text.timeout { color: #ef4444; }
+
+    /* 오버레이 */
+    .overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      justify-content: center; align-items: center; z-index: 999;
+    }
+    .overlay-card {
+      background: #fff; border-radius: 16px; padding: 25px;
+      max-width: 300px; width: 85%; text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .overlay-card h3 { margin: 0 0 10px 0; color: #333; }
+    .overlay-card p { color: #666; line-height: 1.5; margin-bottom: 20px; }
+    .overlay-card button { margin-top: 0; background: #3b82f6; color: white; font-weight: bold; }
+    .hl { color: #ef4444; font-weight: 800; }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div id="start-page">
+    <h1>나의 소통 스타일 찾기</h1>
+    <div class="sub-title">서로 다른 우리가 모여 만드는 완벽한 우리 반</div>
+
+    <div class="intro-box">
+        <p class="intro-text">
+            우리는 서로 다른 능력을 가진 <strong>퍼즐 조각</strong>과 같습니다.<br>
+            나의 조각은 어떤 모양일까요?<br>
+            나를 이해하고 친구와 더 잘 맞춰지기 위한<br>
+            첫걸음을 시작해 보세요.
+        </p>
+    </div>
+
+    <div class="notice-box">
+      <div class="notice-title">📌 시작하기 전에</div>
+      <ul class="notice-list">
+        <li><strong>🙅‍♂️ 시험이 아니에요!</strong> 정답도, 등수도 없습니다.</li>
+        <li><strong>✨ 나쁜 결과는 없어요.</strong> 모든 유형은 멋집니다.</li>
+        <li><strong>⚡ 고민은 짧게!</strong> "딱 나네!" 싶은 걸 골라주세요.</li>
+      </ul>
+    </div>
+
+    <input type="text" id="studentId" placeholder="번호">
+    <input type="text" id="name" placeholder="이름">
+
+    <button class="start-btn" onclick="validateAndStart()">시작하기</button>
+    <div id="errorText" class="error-text">번호와 이름을 정확히 입력해 주세요.</div>
+  </div>
+
+  <div id="question-page" style="display:none;">
+    <div id="progress-text"></div> 
+
+    <div class="timer-wrap">
+      <div id="timer-bar">
+        <div id="timer-progress"></div>
+      </div>
+      <div id="timer-text">00:30</div>
+    </div>
+
+    <h2 id="question-text"></h2>
+    <div id="answers"></div>
+  </div>
+
+</div>
+
+<div id="timeOverlay" class="overlay">
+  <div class="overlay-card">
+    <h3>⏰ 고민은 짧게!</h3>
+    <p>정답은 없어요.<br><span class="hl">가장 먼저 떠오른 생각</span>이<br>진짜 나의 모습입니다.</p>
+    <button onclick="closeOverlay()">알겠어요</button>
+  </div>
+</div>
+
+<div id="doneOverlay" class="overlay">
+  <div class="overlay-card">
+    <h3>🎉 진단 완료 🎉</h3>
+    <p>내 유형 까먹지 않게<br><strong>지금 바로 </strong> 캡처 해주세요! 📸</p>
+    <button onclick="confirmDone()">네, 캡처할게요!</button>
+  </div>
+</div>
+
+<script src="questions.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>

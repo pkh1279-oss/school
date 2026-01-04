@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리 반 DISC 분포도 (강사용)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            margin: 0; padding: 0; 
+            background-color: #ffffff; color: #333; 
+            height: 100vh; overflow: hidden; 
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .main-container {
+            display: flex;
+            width: 95%; max-width: 1200px;
+            height: 90vh;
+            gap: 20px; 
+            justify-content: center;
+        }
+        
+        /* 좌측: 차트 영역 */
+        .left-section {
+            flex: 0 0 auto;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        
+        h1 { margin: 0 0 15px 0; color: #2c3e50; font-size: 1.6rem; }
+        
+        .chart-wrapper {
+            position: relative;
+            width: 550px; height: 550px;
+            border: 2px solid #888;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .quadrant-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+            z-index: 0;
+        }
+        .q-label { 
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            font-weight: bold; color: rgba(0,0,0,0.12); 
+            user-select: none; 
+        }
+        .q-label span:first-child { font-size: 6rem; line-height: 1; }
+        .q-label span:last-child { font-size: 2rem; }
+        
+        /* 배경색 */
+        .q-d { background-color: rgba(229, 57, 53, 0.15); border-right: 1px dashed #aaa; border-bottom: 1px dashed #aaa; } 
+        .q-i { background-color: rgba(253, 216, 53, 0.15); border-bottom: 1px dashed #aaa; } 
+        .q-s { background-color: rgba(67, 160, 71, 0.15); border-right: 1px dashed #aaa; } 
+        .q-c { background-color: rgba(30, 136, 229, 0.15); } 
+
+        #student-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+        }
+        
+        /* 마커 스타일 */
+        .student-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            font-weight: bold;
+            font-size: 12px;
+            color: #111;
+            
+            /* 투명 배경 없음 */
+            
+            display: flex; align-items: center;
+            transition: all 0.2s;
+            cursor: default;
+            z-index: 20; 
+        }
+        /* 마우스 올리면 제일 위로 */
+        .student-marker:hover { 
+            z-index: 999; 
+            transform: translate(-50%, -50%) scale(1.1); 
+            background: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            padding: 2px 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .marker-circle {
+            display: inline-block; width: 12px; height: 12px;
+            border-radius: 50%; margin-right: 4px; 
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .control-panel { margin-top: 15px; text-align: center; }
+        .refresh-btn {
+            padding: 10px 25px; font-size: 1rem; font-weight: bold; color: white; background-color: #333;
+            border: none; border-radius: 50px; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .refresh-btn:hover { background-color: #555; transform: translateY(-2px); }
+        #last-update { margin-top: 5px; color: #888; font-size: 0.8rem; }
+
+        /* 우측: 통계 패널 */
+        .right-section {
+            flex: 1;
+            display: flex; flex-direction: column;
+            justify-content: center; 
+            padding-left: 10px; 
+            max-width: 350px;
+        }
+
+        .stats-group { margin-bottom: 30px; }
+        
+        .stats-title {
+            font-size: 1rem; color: #555; font-weight: bold;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px; margin-bottom: 10px;
+            display: inline-block; 
+        }
+        
+        .stats-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+        .stats-list li { 
+            margin-bottom: 10px; font-size: 0.95rem; 
+            display: flex; align-items: center; 
+            color: #333;
+        }
+        
+        .dot { 
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; 
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="left-section">
+            <h1>우리 반 DISC 분포도</h1>
+            <div class="chart-wrapper">
+                <div class="quadrant-bg">
+                    <div class="q-label q-d"><span>D</span><span>(주도형)</span></div>
+                    <div class="q-label q-i"><span>I</span><span>(사교형)</span></div>
+                    <div class="q-label q-s"><span>S</span><span>(안정형)</span></div>
+                    <div class="q-label q-c"><span>C</span><span>(분석형)</span></div>
+                </div>
+                <div id="student-layer"></div>
+            </div>
+            
+            <div class="control-panel">
+                <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
+                <div id="last-update"></div>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="stats-group">
+                <div class="stats-title">단일유형 현황</div>
+                <ul class="stats-list" id="single-stats"><li>로딩 중...</li></ul>
+            </div>
+
+            <div class="stats-group">
+                <div class="stats-title">복합유형 현황</div>
+                <ul class="stats-list" id="multi-stats"><li>로딩 중...</li></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhidmm24l6cnEfsE_tIaDh4gYbpCeOfPbNL7pZMNw7dcZmMOMe-Hm7_rVS2Iiksk3vpi7m_EPQjgq/pub?gid=0&single=true&output=csv";
+
+        const vividColors = { 'D': '#E53935', 'I': '#FDD835', 'S': '#43A047', 'C': '#1E88E5' };
+        const typeNames = {'D':'주도형', 'I':'사교형', 'S':'안정형', 'C':'분석형'};
+        const sortOrder = { 'D': 1, 'I': 2, 'S': 3, 'C': 4 };
+
+        // ★ [핵심] 랜덤 대신 이름으로 고정된 위치를 계산하는 함수
+        function getStableOffset(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // -4 ~ +4 사이의 고정된 값을 반환 (이름이 같으면 항상 같은 값)
+            return (hash % 9) - 4; 
+        }
+
+        window.onload = loadData;
+
+        function loadData() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.innerText = "⏳ 불러오는 중...";
+            btn.disabled = true;
+
+            Papa.parse(sheetCsvUrl, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    processAndDraw(results.data);
+                    btn.innerText = "🔄 새로고침";
+                    btn.disabled = false;
+                    const now = new Date();
+                    document.getElementById('last-update').innerText = `업데이트: ${now.toLocaleTimeString()}`;
+                },
+                error: function() {
+                    alert("데이터 로드 실패");
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        function processAndDraw(data) {
+            const layer = document.getElementById('student-layer');
+            layer.innerHTML = ''; 
+            
+            let stats = { single: {}, multi: {}, total: 0 };
+            ['D', 'I', 'S', 'C'].forEach(t => stats.single[t] = 0);
+
+            data.forEach(row => {
+                if(!row['이름']) return;
+                
+                const d = Number(row['D count']) || 0;
+                const i = Number(row['I count']) || 0;
+                const s = Number(row['S count']) || 0;
+                const c = Number(row['C count']) || 0;
+                
+                const scores = { D:d, I:i, S:s, C:c };
+
+                if(d+i+s+c === 0) return;
+                stats.total++;
+
+                let rawType = row['최종유형'] || "";
+                let types = rawType.match(/[DISC]/g);
+                if(!types) {
+                    let max = Math.max(d, i, s, c);
+                    types = [];
+                    if(d===max) types.push('D');
+                    if(i===max) types.push('I');
+                    if(s===max) types.push('S');
+                    if(c===max) types.push('C');
+                }
+                
+                types = [...new Set(types)]; 
+                types.sort((a, b) => sortOrder[a] - sortOrder[b]);
+
+                const finalTypeStr = types.join("");
+
+                if(types.length === 1) stats.single[types[0]]++;
+                else stats.multi[finalTypeStr] = (stats.multi[finalTypeStr] || 0) + 1;
+
+                types.forEach(typeChar => {
+                    const myScore = scores[typeChar]; 
+                    
+                    let baseX, baseY;
+                    let moveX = 0, moveY = 0;
+                    const spread = (myScore / 25) * 50; 
+
+                    if(typeChar === 'D') { baseX = 50; baseY = 50; moveX = -spread; moveY = -spread; }
+                    else if(typeChar === 'I') { baseX = 50; baseY = 50; moveX = spread; moveY = -spread; }
+                    else if(typeChar === 'S') { baseX = 50; baseY = 50; moveX = -spread; moveY = spread; }
+                    else if(typeChar === 'C') { baseX = 50; baseY = 50; moveX = spread; moveY = spread; }
+
+                    // ★ [수정] 랜덤(Math.random) 대신 고정값(getStableOffset) 사용
+                    const offset = getStableOffset(row['이름']);
+                    let finalLeft = baseX + moveX + offset;
+                    let finalTop = baseY + moveY + offset;
+
+                    // ★ [핵심] 화면 밖으로 나가지 않게 '안전벽' 설치 (2% ~ 98% 사이 강제)
+                    // 당중독자처럼 끝에 있어도 절대 사라지지 않음
+                    if (finalLeft < 2) finalLeft = 2;
+                    if (finalLeft > 98) finalLeft = 98;
+                    if (finalTop < 2) finalTop = 2;
+                    if (finalTop > 98) finalTop = 98;
+
+                    createMarker(layer, finalLeft, finalTop, row['이름'], types, typeChar);
+                });
+            });
+
+            updateStats(stats);
+        }
+
+        function createMarker(container, left, top, name, types, currentType) {
+            const el = document.createElement('div');
+            el.className = 'student-marker';
+            el.style.left = left + "%";
+            el.style.top = top + "%";
+            
+            if(types.length === 1) {
+                el.innerText = name;
+            } else {
+                const icon = document.createElement('span');
+                icon.className = 'marker-circle';
+                
+                if(types.length === 2) {
+                    const c1 = vividColors[types[0]];
+                    const c2 = vividColors[types[1]];
+                    icon.style.background = `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)`;
+                } else {
+                    let grad = "conic-gradient(";
+                    const slice = 360 / types.length;
+                    types.forEach((t, i) => {
+                        grad += `${vividColors[t]} ${i*slice}deg ${(i+1)*slice}deg, `;
+                    });
+                    grad = grad.slice(0, -2) + ")";
+                    icon.style.background = grad;
+                }
+                
+                el.appendChild(icon);
+                el.appendChild(document.createTextNode(name));
+            }
+
+            container.appendChild(el);
+        }
+
+        function updateStats(stats) {
+            const single = document.getElementById('single-stats');
+            const multi = document.getElementById('multi-stats');
+            single.innerHTML = ''; multi.innerHTML = '';
+            
+            const total = stats.total;
+            if(total === 0) { single.innerHTML = '<li>데이터 없음</li>'; return; }
+            const pct = (v) => Math.round((v/total)*100);
+
+            ['D','I','S','C'].forEach(t => {
+                const c = stats.single[t];
+                if(c >= 0) { 
+                    single.innerHTML += `
+                        <li>
+                            <span class="dot" style="background:${vividColors[t]}"></span>
+                            <strong>${t} (${typeNames[t]})</strong> : ${c}명 (${pct(c)}%)
+                        </li>`;
+                }
+            });
+
+            if(Object.keys(stats.multi).length === 0) {
+                multi.innerHTML = '<li style="color:#999; font-size:0.9rem;">복합유형 없음</li>';
+            } else {
+                for(const [type, count] of Object.entries(stats.multi)) {
+                    const typeArr = type.split('');
+                    let bgStyle = "";
+                    if(typeArr.length === 2) {
+                         const c1 = vividColors[typeArr[0]];
+                         const c2 = vividColors[typeArr[1]];
+                         bgStyle = `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)`;
+                    } else {
+                        let grad = "conic-gradient(";
+                        const slice = 360 / typeArr.length;
+                        typeArr.forEach((t, i) => {
+                            grad += `${vividColors[t]} ${i*slice}deg ${(i+1)*slice}deg, `;
+                        });
+                        bgStyle = grad.slice(0, -2) + ")";
+                    }
+
+                    multi.innerHTML += `
+                        <li>
+                            <span class="dot" style="background:${bgStyle}"></span>
+                            <strong>${type}</strong> : ${count}명 (${pct(count)}%)
+                        </li>`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
